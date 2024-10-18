@@ -11,7 +11,7 @@ export default function Header() {
         />
         <a
           href="#"
-          className="font-medium text-[28px] text-[#576474] hover:underline"
+          className="font-medium text-3xl text-secondary-foreground hover:underline"
         >
           Contact
         </a>
