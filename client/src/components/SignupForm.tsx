@@ -3,32 +3,68 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { Form, FormControl, FormField, FormItem, FormMessage } from "./ui/form";
 import { Input } from "./ui/input";
-import { Mail, Phone, User, Users } from "lucide-react";
+import { KeyRound, Loader2, Mail, Phone, User, Users } from "lucide-react";
 import { Button } from "./ui/button";
+import { toast } from "sonner";
+import { useUser } from "@/contexts/user-context";
+import { ENDPOINT } from "@/constants";
 
 const formSchema = z.object({
-  name: z.string().min(1, "Name is required"),
-  phone: z.string().length(10, "Phone number must be 10 digits"),
-  company_name: z.string().min(1, "Company Name is required"),
-  company_email: z.string().email("Company Email is required"),
-  employee_size: z.number({ message: "Employee Size is required" }),
+  name: z.string().min(1),
+  email: z.string().email(),
+  mobile: z.string().length(10, "Must contain exactly 10 digits"),
+  role: z.literal("company"),
+  password: z.string().min(8),
+  companyName: z.string().min(1),
+  employeeSize: z.coerce.number().gte(1),
 });
 
 const iconClass =
   "absolute left-3 top-1/2 -translate-y-1/2 stroke-muted-foreground peer-focus-visible:stroke-black";
 
 export default function SignupForm() {
+  const { setUser } = useUser();
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
+    defaultValues: {
+      name: "",
+      email: "",
+      mobile: "",
+      role: "company",
+      companyName: "",
+      employeeSize: 1,
+      password: "",
+    },
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    console.log(values);
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    try {
+      const res = await fetch(`${ENDPOINT}/auth/register`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify(values),
+      });
+      const data = await res.json();
+      toast(data.message);
+      if (data.status) {
+        setUser(data.user);
+      }
+    } catch (error) {
+      console.log(error);
+      toast.error("Something went wrong");
+    }
   }
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="mt-10 space-y-6">
+      <form
+        onSubmit={form.handleSubmit(onSubmit)}
+        className="mt-10 space-y-6 text-left"
+      >
         <FormField
           control={form.control}
           name="name"
@@ -36,7 +72,7 @@ export default function SignupForm() {
             <FormItem>
               <div className="relative">
                 <FormControl>
-                  <Input placeholder="Name" {...field} />
+                  <Input className="pl-12" placeholder="Name" {...field} />
                 </FormControl>
                 <User className={iconClass} />
               </div>
@@ -47,12 +83,12 @@ export default function SignupForm() {
 
         <FormField
           control={form.control}
-          name="phone"
+          name="mobile"
           render={({ field }) => (
             <FormItem>
               <div className="relative">
                 <FormControl>
-                  <Input placeholder="Phone no." {...field} />
+                  <Input className="pl-12" placeholder="Phone no." {...field} />
                 </FormControl>
                 <Phone className={iconClass} />
               </div>
@@ -63,12 +99,16 @@ export default function SignupForm() {
 
         <FormField
           control={form.control}
-          name="company_name"
+          name="companyName"
           render={({ field }) => (
             <FormItem>
               <div className="relative">
                 <FormControl>
-                  <Input placeholder="Company Name" {...field} />
+                  <Input
+                    className="pl-12"
+                    placeholder="Company Name"
+                    {...field}
+                  />
                 </FormControl>
                 <User className={iconClass} />
               </div>
@@ -79,12 +119,16 @@ export default function SignupForm() {
 
         <FormField
           control={form.control}
-          name="company_email"
+          name="email"
           render={({ field }) => (
             <FormItem>
               <div className="relative">
                 <FormControl>
-                  <Input placeholder="Company Email" {...field} />
+                  <Input
+                    className="pl-12"
+                    placeholder="Company Email"
+                    {...field}
+                  />
                 </FormControl>
                 <Mail className={iconClass} />
               </div>
@@ -95,12 +139,16 @@ export default function SignupForm() {
 
         <FormField
           control={form.control}
-          name="employee_size"
+          name="employeeSize"
           render={({ field }) => (
             <FormItem>
               <div className="relative">
                 <FormControl>
-                  <Input placeholder="Employee Size" {...field} />
+                  <Input
+                    className="pl-12"
+                    placeholder="Employee Size"
+                    {...field}
+                  />
                 </FormControl>
                 <Users className={iconClass} />
               </div>
@@ -109,20 +157,54 @@ export default function SignupForm() {
           )}
         />
 
-        <p className="mt-6 font-bold text-foreground/70">
-          By clicking on proceed you wil accept our
-          <br />
-          <a href="#" className="text-primary/70">
-            Terms
-          </a>
-          &nbsp;&&nbsp;
-          <a href="#" className="text-primary/70">
-            Conditions
-          </a>
-        </p>
+        <FormField
+          control={form.control}
+          name="password"
+          render={({ field }) => (
+            <FormItem>
+              <div className="relative">
+                <FormControl>
+                  <Input
+                    className="pl-12"
+                    placeholder="Password"
+                    type="password"
+                    {...field}
+                  />
+                </FormControl>
+                <KeyRound className={iconClass} />
+              </div>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
-        <Button className="w-full">Proceed</Button>
+        <Message />
+        <SubmitButton isPending={form.formState.isSubmitting} />
       </form>
     </Form>
+  );
+}
+
+function Message() {
+  return (
+    <p className="mt-6 font-bold text-foreground/70">
+      By clicking on proceed you wil accept our
+      <br />
+      <a href="#" className="text-primary/70">
+        Terms
+      </a>
+      &nbsp;&&nbsp;
+      <a href="#" className="text-primary/70">
+        Conditions
+      </a>
+    </p>
+  );
+}
+
+function SubmitButton({ isPending }: { isPending: boolean }) {
+  return (
+    <Button className="w-full" disabled={isPending}>
+      {isPending ? <Loader2 className="animate-spin" /> : "Proceed"}
+    </Button>
   );
 }

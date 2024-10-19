@@ -1,0 +1,45 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String  @id @default(auto()) @map("_id") @db.ObjectId
+  name           String
+  email          String  @unique
+  mobile         String  @unique
+  role           String
+  password       String
+  emailCode      String?
+  mobileCode     String?
+  companyName    String
+  employeeSize   Int
+  emailVerified  Boolean @default(false)
+  mobileVerified Boolean @default(false)
+  jobs           Job[]
+}
+
+model Job {
+  id          String     @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  description String
+  level       String
+  candidates  String[]
+  endDate     DateTime
+  User        User?      @relation(fields: [userId], references: [id])
+  userId      String?    @db.ObjectId
+  logs        EmailLog[]
+}
+
+model EmailLog {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  status    String
+  recipient String
+  sentAt    DateTime @default(now())
+  Job       Job?     @relation(fields: [jobId], references: [id])
+  jobId     String?  @db.ObjectId
+}
